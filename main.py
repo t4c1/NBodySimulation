@@ -13,17 +13,17 @@ from vector import Vec
 #OpenCL code
 import part2
 #functions for initial values of particles
-import initialize
+#import initialize
 
 #number of particles
-num = 2**14#5000 CPU
+num = 18000#2**14#5000 CPU
 #time step for integration
 simspeed=0.00005
 acc=1
 cnst=2.0**28/(num+2**12)/(num+2**12)
 per_frame=int(cnst*acc+0.5)
 print per_frame,"calls per frame"
-dt = simspeed/acc#0.000001
+dt = simspeed/acc/2#0.000001
 
 class window(object):
     def __init__(self, *args, **kwargs):
@@ -58,7 +58,7 @@ class window(object):
         self.glinit()
 
         #set up initial conditions
-        (pos_vbo, col_vbo, vel) = initialize.fountain(num)
+        (pos_vbo, col_vbo, vel) = part2.Part2.initial_pos(num)
         #create our OpenCL instance
         self.cle = part2.Part2(num, dt)
         self.cle.loadData(pos_vbo, col_vbo, vel)
@@ -95,7 +95,7 @@ class window(object):
         self.mouse_old.x = x
         self.mouse_old.y = y
 
-    
+
     def on_mouse_motion(self, x, y):
         dx = x - self.mouse_old.x
         dy = y - self.mouse_old.y
