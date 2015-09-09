@@ -16,14 +16,14 @@ import part2
 #import initialize
 
 #number of particles
-num = 18000#2**14#5000 CPU
-#time step for integration
-simspeed=0.00005
+num = 7000#2**14#5000 CPU
+simspeed=0.0001
 acc=1
 cnst=2.0**28/(num+2**12)/(num+2**12)
-per_frame=int(cnst*acc+0.5)
+per_frame=2#int(cnst*acc+0.5)
 print per_frame,"calls per frame"
-dt = simspeed/acc/2#0.000001
+dt = 0.00004#simspeed/acc/2#0.00000
+# 1
 
 class window(object):
     def __init__(self, *args, **kwargs):
@@ -84,7 +84,7 @@ class window(object):
         if args[0] == ESCAPE or args[0] == 'q':
             sys.exit()
         elif args[0] == 't':
-            print self.cle.timings
+            print self.cle.tim
 
     def on_click(self, button, state, x, y):
         if state == GLUT_DOWN:

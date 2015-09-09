@@ -6,14 +6,25 @@ from OpenGL.raw.GL.VERSION.GL_1_5 import GL_DYNAMIC_DRAW, GL_ARRAY_BUFFER
 import pyopencl as cl
 import sys
 
+import timing
+tim=timing.Timing()
+
 import numpy
 class Part2(object):
     def __init__(self, num, dt, *args, **kwargs):
         self.clinit()
-        self.loadProgram("part2_.cl")
+        self.loadProgram("part2_rk.cl")
+        #self.init_powers()
 
         self.num = num
         self.dt = numpy.float32(dt)
+        self.tim=tim
+
+    def init_powers(self):
+        mf = cl.mem_flags
+        self.powers_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY,2**30)
+        self.program.init_powers(self.queue, (2 ** 26,), None, self.powers_buf)
+        #cl.enqueue_copy(self.queue,self.powers,self.powers_buf)
 
     def loadData(self, pos_vbo, col_vbo, vel):
         mf = cl.mem_flags
@@ -39,7 +50,7 @@ class Part2(object):
         # set up the list of GL objects to share with opencl
         self.gl_objects = [self.pos_cl, self.col_cl]
 
-
+    @tim
     def execute(self, sub_intervals):
         cl.enqueue_acquire_gl_objects(self.queue, self.gl_objects)
         mf=cl.mem_flags
@@ -47,8 +58,7 @@ class Part2(object):
         global_size = (self.num,)
         local_size = None#(2**9,)
 
-        kernelargs = (self.pos_cl,
-                      self.vel_cl,
+        kernelargs = (self.pos_cl,self.vel_cl,
                       #cl.LocalMemory(1024*3*4),
                       #cl.Buffer(self.ctx, mf.READ_ONLY, size=self.vel_cl.size),
                       self.dt)
@@ -108,7 +118,7 @@ class Part2(object):
         glDisable(GL_BLEND)
 
     @classmethod
-    def init_np(self,num):
+    def init_np(self,num,collision=False):
         velikost_centra = 50
         ostrina_meje_krakov = 1./500
         ukrivljenost_krakov = 1. / 70
@@ -133,13 +143,13 @@ class Part2(object):
         r[numpy.where(r<0.3)]=0.3
         pos[:,2]=(numpy.random.random_sample((num, ))-0.5)/r/10
         pos[:,3] =1.# numpy.random.random_sample((num, ))
-        if 1:
+        if 0:
             # c1=0.0095
             # c2=0.6
             c1=0.008
             c2=0.65
         else:
-            c1=0.004
+            c1=0.005
             c2=0.8
         vel[:,0]=pos[:,1]/r**c2*num*c1
         vel[:,1]=-pos[:,0]/r**c2*num*c1
@@ -151,6 +161,8 @@ class Part2(object):
         col[:,2] = 0.03
 
         col[:,3] = 1
+        if collision:
+            pos[:num/2,0]+=3
         return pos,col,vel
 
     @classmethod
@@ -177,7 +189,7 @@ class Part2(object):
         col[:,0] = 1
         col[:,1] = 0.3
         col[:,2] = 0.1
-        col[:,3] = 0.5
+        col[:,3] = vel[:,3]/2
 
         prog.init(queue,(num,),None,pos_buf,vel_buf)
         cl.enqueue_copy(queue, pos, pos_buf)
